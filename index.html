@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>对对碰 · 奖池测算</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f9f9f8;
+  --surface: #ffffff;
+  --surface-2: #f4f4f2;
+  --surface-3: #ececea;
+  --border: rgba(0,0,0,0.09);
+  --border-strong: rgba(0,0,0,0.15);
+  --text-1: #1a1a18;
+  --text-2: #4a4a46;
+  --text-3: #8a8a84;
+  --text-4: #b0b0aa;
+  --green: #16a34a;
+  --green-bg: #f0fdf4;
+  --red: #dc2626;
+  --red-bg: #fef2f2;
+  --amber: #b45309;
+  --amber-bg: #fffbeb;
+  --radius: 8px;
+  --radius-sm: 5px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 15px; }
+body {
+  font-family: 'Noto Sans SC', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text-1);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Nav ── */
+nav {
+  height: 52px; background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 28px; gap: 16px;
+  position: sticky; top: 0; z-index: 50;
+}
+.nav-brand { font-family: 'Instrument Serif', serif; font-size: 17px; color: var(--text-1); letter-spacing: -0.01em; }
+.nav-sep { width: 1px; height: 16px; background: var(--border-strong); }
+.nav-sub { font-size: 12px; color: var(--text-3); font-family: 'Geist Mono', monospace; }
+
+/* ── Page ── */
+.page { max-width: 860px; margin: 0 auto; padding: 32px 24px 80px; }
+
+.section-label {
+  font-size: 11px; font-family: 'Geist Mono', monospace;
+  color: var(--text-3); letter-spacing: 0.08em; text-transform: uppercase;
+  margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+}
+.section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-sm);
+  margin-bottom: 20px; overflow: hidden;
+}
+
+/* ── Formula bar ── */
+.formula-bar {
+  background: var(--text-1); border-radius: var(--radius);
+  padding: 14px 18px; margin-bottom: 20px;
+  display: flex; gap: 0; flex-wrap: wrap;
+}
+.formula-item {
+  flex: 1; min-width: 200px; padding: 4px 12px;
+  border-right: 1px solid rgba(255,255,255,0.08);
+}
+.formula-item:first-child { padding-left: 0; }
+.formula-item:last-child { border-right: none; }
+.f-label { font-size: 10px; font-family: 'Geist Mono', monospace; color: rgba(255,255,255,0.35); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px; }
+.f-expr { font-size: 11px; color: rgba(255,255,255,0.5); font-family: 'Geist Mono', monospace; margin-bottom: 3px; }
+.f-result { font-size: 16px; font-weight: 500; color: #fff; font-family: 'Geist Mono', monospace; }
+.f-result.good { color: #4ade80; }
+.f-result.warn { color: #fbbf24; }
+.f-result.bad  { color: #f87171; }
+
+/* ── Config ── */
+.config-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px; background: var(--border); }
+.config-cell { background: var(--surface); padding: 16px 20px; }
+.config-cell:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+.config-cell:last-child  { border-radius: 0 var(--radius) var(--radius) 0; }
+.cell-label { font-size: 11px; font-family: 'Geist Mono', monospace; color: var(--text-3); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 8px; }
+.cell-input { display: flex; align-items: center; gap: 4px; }
+.cell-prefix { font-size: 13px; color: var(--text-3); font-family: 'Geist Mono', monospace; flex-shrink: 0; }
+input[type=number], select {
+  background: none; border: none; outline: none;
+  font-size: 20px; font-weight: 500; color: var(--text-1);
+  font-family: 'Geist Mono', monospace; width: 100%; appearance: none;
+}
+input[type=number]:disabled { color: var(--text-3); font-size: 16px; }
+.slider-wrap { display: flex; align-items: center; gap: 10px; margin-top: 2px; }
+input[type=range] { flex: 1; height: 3px; appearance: none; background: var(--surface-3); border-radius: 2px; outline: none; cursor: pointer; }
+input[type=range]::-webkit-slider-thumb { appearance: none; width: 14px; height: 14px; background: var(--text-1); border-radius: 50%; cursor: pointer; }
+.slider-display { font-size: 20px; font-weight: 500; font-family: 'Geist Mono', monospace; color: var(--text-1); min-width: 44px; text-align: right; }
+
+/* ── Prize grid ── */
+.prize-grid {
+  display: flex; flex-direction: column; gap: 1px;
+  background: var(--border); border-radius: var(--radius);
+  overflow: hidden; border: 1px solid var(--border); margin-bottom: 20px;
+}
+.prize-item {
+  background: var(--surface);
+  display: grid;
+  grid-template-columns: 28px 52px 1fr 100px 100px 100px auto;
+  align-items: stretch;
+  gap: 0; transition: background 0.1s;
+}
+.prize-item:hover { background: #fafaf9; }
+.prize-item.prize-header {
+  background: var(--surface-2); font-size: 10px;
+  font-family: 'Geist Mono', monospace; color: var(--text-3);
+  letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 8px 0; cursor: default; align-items: center;
+}
+.prize-item.prize-header:hover { background: var(--surface-2); }
+.p-col {
+  padding: 11px 14px; border-right: 1px solid var(--border);
+  display: flex; align-items: center;
+}
+.p-col:last-child { border-right: none; }
+.p-dot-col {
+  padding: 0 0 0 10px; border-right: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+}
+.p-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+/* ── Image upload cell ── */
+.p-img-col {
+  border-right: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  padding: 6px; position: relative; cursor: pointer;
+}
+.img-thumb {
+  width: 38px; height: 38px; border-radius: 4px;
+  object-fit: cover; cursor: pointer;
+  transition: opacity 0.15s;
+  display: block;
+}
+.img-thumb:hover { opacity: 0.8; }
+.img-placeholder {
+  width: 38px; height: 38px; border-radius: 4px;
+  border: 1px dashed var(--border-strong);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: border-color 0.15s, background 0.15s;
+  color: var(--text-4);
+}
+.img-placeholder:hover { border-color: var(--text-3); background: var(--surface-2); color: var(--text-3); }
+.img-upload-input { display: none; }
+
+.prize-name-input {
+  border: none; background: none; outline: none;
+  font-size: 13px; color: var(--text-1);
+  font-family: 'Noto Sans SC', sans-serif; width: 100%; padding: 0;
+}
+.prize-name-input::placeholder { color: var(--text-4); }
+.p-field {
+  border: none; background: none; outline: none;
+  font-size: 13px; font-family: 'Geist Mono', monospace;
+  color: var(--text-1); width: 100%; padding: 0; appearance: none; cursor: pointer;
+}
+.p-stat { font-size: 11px; font-family: 'Geist Mono', monospace; color: var(--text-3); white-space: nowrap; }
+.p-stat.highlight { color: var(--text-1); font-weight: 500; }
+.p-stat.danger { color: var(--red); }
+.p-del {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-4); font-size: 14px; padding: 4px 8px; line-height: 1;
+  transition: color 0.1s; flex-shrink: 0;
+}
+.p-del:hover { color: var(--red); }
+
+.add-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; padding: 10px; background: none;
+  border: 1px dashed var(--border-strong); border-radius: var(--radius);
+  cursor: pointer; font-size: 12px; font-family: 'Geist Mono', monospace;
+  color: var(--text-3); letter-spacing: 0.04em; text-transform: uppercase;
+  transition: all 0.15s; margin-bottom: 20px;
+}
+.add-btn:hover { border-color: var(--text-2); color: var(--text-2); background: var(--surface-2); }
+
+/* ── Lightbox ── */
+.lightbox {
+  display: none; position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.88);
+  align-items: center; justify-content: center;
+  cursor: zoom-out;
+}
+.lightbox.open { display: flex; }
+.lightbox img {
+  max-width: 90vw; max-height: 90vh;
+  border-radius: 6px; object-fit: contain;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+  cursor: default;
+}
+.lightbox-name {
+  position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+  font-size: 13px; color: rgba(255,255,255,0.6);
+  font-family: 'Geist Mono', monospace;
+  background: rgba(0,0,0,0.4); padding: 6px 14px; border-radius: 20px;
+  white-space: nowrap;
+}
+.lightbox-close {
+  position: absolute; top: 20px; right: 24px;
+  background: rgba(255,255,255,0.1); border: none; cursor: pointer;
+  color: rgba(255,255,255,0.7); font-size: 20px; line-height: 1;
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.lightbox-close:hover { background: rgba(255,255,255,0.2); }
+
+/* ── Metrics ── */
+.metrics-row {
+  display: grid; grid-template-columns: repeat(4,1fr);
+  gap: 1px; background: var(--border);
+  border-radius: var(--radius); overflow: hidden;
+  border: 1px solid var(--border); margin-bottom: 12px;
+}
+.metric { background: var(--surface); padding: 14px 16px; }
+.metric-label { font-size: 10px; font-family: 'Geist Mono', monospace; color: var(--text-3); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 5px; }
+.metric-val { font-size: 20px; font-weight: 500; font-family: 'Geist Mono', monospace; color: var(--text-1); line-height: 1.1; }
+.metric-val.good { color: var(--green); }
+.metric-val.bad  { color: var(--red); }
+.metric-val.warn { color: var(--amber); }
+.metric-sub { font-size: 10px; color: var(--text-4); margin-top: 2px; }
+
+/* ── Progress ── */
+.progress-wrap { margin-bottom: 16px; }
+.progress-meta { display: flex; justify-content: space-between; font-size: 11px; font-family: 'Geist Mono', monospace; color: var(--text-3); margin-bottom: 5px; }
+.progress-track { height: 4px; background: var(--surface-3); border-radius: 2px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+
+/* ── Prob bar ── */
+.prob-wrap { margin-bottom: 16px; }
+.prob-label { font-size: 11px; font-family: 'Geist Mono', monospace; color: var(--text-3); margin-bottom: 6px; }
+.prob-bar { display: flex; height: 6px; border-radius: 3px; overflow: hidden; margin-bottom: 8px; background: var(--surface-3); }
+.prob-legend { display: flex; flex-wrap: wrap; gap: 12px; }
+.prob-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; font-family: 'Geist Mono', monospace; color: var(--text-3); }
+.prob-legend-dot { width: 7px; height: 7px; border-radius: 1.5px; flex-shrink: 0; }
+
+/* ── Status ── */
+.status { padding: 10px 14px; border-radius: var(--radius-sm); font-size: 12px; line-height: 1.65; border: 1px solid; margin-bottom: 16px; }
+.status.ok   { background: var(--green-bg); border-color: rgba(22,163,74,0.2); color: var(--green); }
+.status.warn { background: var(--amber-bg); border-color: rgba(180,83,9,0.2);  color: var(--amber); }
+.status.bad  { background: var(--red-bg);   border-color: rgba(220,38,38,0.2); color: var(--red); }
+
+/* ── Recommend ── */
+.rec-controls { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+.strat-btn {
+  padding: 5px 12px; border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm); background: none; cursor: pointer;
+  font-size: 12px; font-family: 'Geist Mono', monospace; color: var(--text-2); transition: all 0.12s;
+}
+.strat-btn:hover { border-color: var(--text-2); background: var(--surface-2); }
+.strat-btn.active { background: var(--text-1); border-color: var(--text-1); color: white; }
+.gen-btn {
+  margin-left: auto; padding: 6px 16px; background: var(--text-1);
+  border: none; border-radius: var(--radius-sm); cursor: pointer;
+  font-size: 12px; font-family: 'Geist Mono', monospace; color: white;
+  letter-spacing: 0.04em; transition: opacity 0.12s;
+  display: flex; align-items: center; gap: 6px;
+}
+.gen-btn:hover { opacity: 0.8; }
+.gen-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.strat-hint { font-size: 11px; color: var(--text-3); margin-bottom: 12px; }
+.rec-card { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 16px; }
+.rec-card-head {
+  padding: 9px 14px; background: var(--surface-2); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 11px; font-family: 'Geist Mono', monospace; color: var(--text-3);
+}
+.rec-row {
+  display: grid; grid-template-columns: 8px 1fr 90px 70px 100px 60px;
+  align-items: center; gap: 8px; padding: 9px 14px;
+  border-bottom: 1px solid var(--border); font-size: 12px;
+}
+.rec-row:last-child { border-bottom: none; }
+.rec-name { font-size: 12px; color: var(--text-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rec-mono { font-family: 'Geist Mono', monospace; font-size: 12px; color: var(--text-2); white-space: nowrap; }
+.rec-diff { font-family: 'Geist Mono', monospace; font-size: 10px; white-space: nowrap; }
+.apply-btn {
+  padding: 3px 9px; border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm); background: none; cursor: pointer;
+  font-size: 10px; font-family: 'Geist Mono', monospace; color: var(--text-2);
+  transition: all 0.1s; white-space: nowrap;
+}
+.apply-btn:hover { background: var(--text-1); color: white; border-color: var(--text-1); }
+.apply-all-btn {
+  padding: 4px 12px; background: var(--text-1); border: none;
+  border-radius: var(--radius-sm); cursor: pointer;
+  font-size: 10px; font-family: 'Geist Mono', monospace; color: white; transition: opacity 0.1s;
+}
+.apply-all-btn:hover { opacity: 0.75; }
+
+/* ── Detail table ── */
+.detail-wrap { overflow-x: auto; }
+.detail-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.detail-table th {
+  padding: 8px 12px; font-size: 10px; font-family: 'Geist Mono', monospace;
+  font-weight: 500; color: var(--text-3); letter-spacing: 0.06em; text-transform: uppercase;
+  background: var(--surface-2); border-bottom: 1px solid var(--border-strong);
+  white-space: nowrap; text-align: left;
+}
+.detail-table th.r { text-align: right; }
+.detail-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text-1); vertical-align: middle; }
+.detail-table td.mono { font-family: 'Geist Mono', monospace; font-size: 12px; }
+.detail-table td.r { text-align: right; }
+.detail-table tr.total td { font-weight: 500; background: var(--surface-2); font-family: 'Geist Mono', monospace; border-top: 1px solid var(--border-strong); border-bottom: none; }
+.detail-table tr:last-child:not(.total) td { border-bottom: none; }
+.dot-name { display: flex; align-items: center; gap: 7px; }
+.tbl-dot { width: 7px; height: 7px; border-radius: 1.5px; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
+  <button class="lightbox-close" onclick="closeLightbox(null,true)">✕</button>
+  <img id="lightbox-img" src="" alt="">
+  <div class="lightbox-name" id="lightbox-name"></div>
+</div>
+
+<nav>
+  <span class="nav-brand">对对碰</span>
+  <div class="nav-sep"></div>
+  <span class="nav-sub">奖池测算 · Prize Pool Calculator</span>
+</nav>
+
+<div class="page">
+
+  <div class="section-label">定价 & 目标利润率</div>
+
+  <div class="formula-bar">
+    <div class="formula-item">
+      <div class="f-label">预算上限</div>
+      <div class="f-expr">定价 × (1 − 利润率)</div>
+      <div class="f-result" id="f-budget">—</div>
+    </div>
+    <div class="formula-item">
+      <div class="f-label">当前期望成本</div>
+      <div class="f-expr">Σ 区间概率 × 成本价</div>
+      <div class="f-result" id="f-cost">—</div>
+    </div>
+    <div class="formula-item">
+      <div class="f-label">实际利润率</div>
+      <div class="f-expr">(定价 − 期望成本) ÷ 定价</div>
+      <div class="f-result" id="f-margin">—</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px;">
+    <div class="config-row">
+      <div class="config-cell">
+        <div class="cell-label">单局定价</div>
+        <div class="cell-input">
+          <span class="cell-prefix">¥</span>
+          <input type="number" id="unit-price" min="1" step="1" value="98" oninput="calc()">
+        </div>
+      </div>
+      <div class="config-cell">
+        <div class="cell-label">目标利润率</div>
+        <div class="slider-wrap">
+          <input type="range" min="0" max="99" step="1" value="12" id="sl-margin"
+            oninput="document.getElementById('v-margin').textContent=this.value+'%';calc()">
+          <span class="slider-display" id="v-margin">12%</span>
+        </div>
+      </div>
+      <div class="config-cell">
+        <div class="cell-label">奖品预算上限</div>
+        <div class="cell-input">
+          <span class="cell-prefix">¥</span>
+          <input type="number" id="budget-display" disabled>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">奖品配置</div>
+
+  <div class="prize-grid" id="prize-grid">
+    <div class="prize-item prize-header">
+      <div class="p-dot-col"></div>
+      <div class="p-col" style="font-size:10px;">图片</div>
+      <div class="p-col">商品名称</div>
+      <div class="p-col">门槛（福蛋）</div>
+      <div class="p-col">成本价 ¥</div>
+      <div class="p-col">零售价 ¥</div>
+      <div class="p-col">区间概率 / 期望成本</div>
+    </div>
+  </div>
+
+  <button class="add-btn" onclick="addPrize()">
+    <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+      <path d="M5.5 1v9M1 5.5h9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    添加奖品
+  </button>
+
+  <div class="section-label">智能推荐门槛</div>
+
+  <div class="card" style="margin-bottom:20px;">
+    <div style="padding:16px 18px;">
+      <div class="rec-controls">
+        <button class="strat-btn active" onclick="setStrat('equal_cost',this)">均等预算</button>
+        <button class="strat-btn" onclick="setStrat('front_heavy',this)">前档倾斜</button>
+        <button class="strat-btn" onclick="setStrat('back_heavy',this)">后档倾斜</button>
+        <button class="gen-btn" id="rec-btn" onclick="runRecommend()">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M1 6h10M7 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          生成推荐
+        </button>
+      </div>
+      <div class="strat-hint" id="strat-hint">每档分配等额预算，各档期望成本均等</div>
+      <div id="rec-output"></div>
+    </div>
+  </div>
+
+  <div class="section-label">汇总指标</div>
+
+  <div class="metrics-row" id="metrics-row"></div>
+
+  <div class="progress-wrap">
+    <div class="progress-meta">
+      <span>预算使用进度</span>
+      <span id="progress-label" style="font-family:'Geist Mono',monospace;font-size:11px;"></span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill" style="width:0%;background:var(--green);"></div>
+    </div>
+  </div>
+
+  <div class="prob-wrap">
+    <div class="prob-label">概率区间分布</div>
+    <div class="prob-bar" id="prob-bar"></div>
+    <div class="prob-legend" id="prob-legend"></div>
+    <div style="font-size:10px;color:var(--text-4);font-family:'Geist Mono',monospace;margin-top:6px;" id="uncov-note"></div>
+  </div>
+
+  <div id="status-wrap"></div>
+
+  <div class="section-label">奖品明细</div>
+
+  <div class="card">
+    <div class="detail-wrap">
+      <table class="detail-table">
+        <thead>
+          <tr>
+            <th>商品</th><th>门槛区间</th>
+            <th class="r">区间概率</th><th class="r">成本价</th>
+            <th class="r">零售价</th><th class="r">期望成本/局</th>
+            <th class="r">期望零售/局</th><th class="r">占预算</th>
+          </tr>
+        </thead>
+        <tbody id="detail-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const PD=[
+  [12,0.1335],[13,0.8935],[14,3.8773],[15,8.1009],[16,10.5503],[17,9.8411],
+  [18,8.7741],[19,9.6186],[20,10.1563],[21,8.2883],[22,5.8461],[23,4.8695],
+  [24,4.5854],[25,3.5663],[26,2.3319],[27,1.7714],[28,1.6042],[29,1.2473],
+  [30,0.8484],[31,0.6455],[32,0.5374],[33,0.4223],[34,0.3213],[35,0.2445],
+  [36,0.1934],[37,0.1590],[38,0.1230],[39,0.0918],[40,0.0734],[41,0.0580],
+  [42,0.0498],[43,0.0351],[44,0.0293],[45,0.0259],[46,0.0170],[47,0.0138],
+  [48,0.0131],[49,0.0085],[50,0.0070],[51,0.0058],[52,0.0045],[53,0.0033],
+  [54,0.0022],[55,0.0016],[56,0.0022],[57,0.0010],[58,0.0009],[59,0.0009],
+  [60,0.0009],[61,0.0005],[62,0.0005],[63,0.0007],[64,0.0007],[65,0.0002],
+  [67,0.0001],[68,0.0001],[69,0.0001],[71,0.0001],[72,0.0001],[77,0.0001],
+];
+const ALL_EGGS=PD.map(r=>r[0]);
+const N=ALL_EGGS.length;
+const COLORS=['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316'];
+const CUM=new Array(N+1).fill(0);
+for(let k=0;k<N;k++) CUM[k+1]=CUM[k]+PD[k][1];
+function SF(i,j){return CUM[Math.min(j,N)]-CUM[i];}
+function segProb(lo,hi){return PD.filter(r=>r[0]>=lo&&(hi===9999||r[0]<hi)).reduce((s,r)=>s+r[1],0);}
+
+let prizes=[
+  {id:1,name:'DIMOO 收纳包盲盒',thresh:12,cost:71.1,retail:79,img:null},
+  {id:2,name:'DIMOO 耳机包盲盒',thresh:20,cost:84,retail:99,img:null},
+  {id:3,name:'DIMOO 搪胶毛绒挂件',thresh:29,cost:129,retail:145.5,img:null},
+  {id:4,name:'DIMOO 米奇搪胶毛绒包',thresh:36,cost:539,retail:599,img:null},
+];
+let nid=5, strat='equal_cost';
+let lastRecRows=[];
+
+// ── Lightbox ──
+function openLightbox(src, name){
+  document.getElementById('lightbox-img').src=src;
+  document.getElementById('lightbox-name').textContent=name;
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeLightbox(e, force){
+  if(force || (e && e.target===document.getElementById('lightbox'))){
+    document.getElementById('lightbox').classList.remove('open');
+    document.body.style.overflow='';
+  }
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeLightbox(null,true); });
+
+// ── Image upload ──
+function triggerUpload(id){
+  document.getElementById(`img-input-${id}`).click();
+}
+function handleImageUpload(id, input){
+  const file=input.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const p=prizes.find(p=>p.id===id);
+    if(p) p.img=e.target.result;
+    renderPrizes();
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── Prize functions ──
+function setStrat(s,el){
+  strat=s;
+  document.querySelectorAll('.strat-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  const h={equal_cost:'每档分配等额预算，各档期望成本均等',front_heavy:'低门槛奖品分配更多预算，获奖感更频繁',back_heavy:'高门槛奖品分配更多预算，大奖更有分量'};
+  document.getElementById('strat-hint').textContent=h[s];
+}
+
+function combs(maxVal,r){
+  const res=[];
+  function h(s,c){
+    if(c.length===r){res.push([...c]);return;}
+    const rem=r-c.length;
+    for(let i=s;i<=maxVal-rem+1;i++){c.push(i);h(i+1,c);c.pop();}
+  }
+  h(1,[]);return res;
+}
+
+function globalOptimize(costs,budget,s){
+  const n=costs.length;
+  let te;
+  if(s==='equal_cost') te=costs.map(()=>budget/n);
+  else if(s==='front_heavy'){const w=costs.map((_,i)=>n-i),tw=w.reduce((a,b)=>a+b,0);te=w.map(ww=>budget*ww/tw);}
+  else{const w=costs.map((_,i)=>i+1),tw=w.reduce((a,b)=>a+b,0);te=w.map(ww=>budget*ww/tw);}
+  if(n===1) return{bounds:[0,N],total:SF(0,N)/100*costs[0],te};
+  const cs=combs(N-1,n-1);
+  let best=1e18,bb=null,bt=0;
+  for(const sp of cs){
+    const b=[0,...sp,N];
+    let t=0,sd=0;
+    for(let i=0;i<n;i++){const s2=SF(b[i],b[i+1]),e=s2/100*costs[i];t+=e;sd+=Math.abs(e-te[i]);}
+    const score=Math.abs(t-budget)*10+sd*0.3;
+    if(score<best){best=score;bb=b;bt=t;}
+  }
+  return{bounds:bb,total:bt,te};
+}
+
+function calcMinEc(costs){
+  const n=costs.length;
+  if(n===1) return SF(0,N)/100*costs[0];
+  const cs=combs(N-1,n-1);
+  let min=1e18;
+  for(const sp of cs){
+    const b=[0,...sp,N];
+    const t=costs.reduce((s,c,i)=>s+SF(b[i],b[i+1])/100*c,0);
+    if(t<min) min=t;
+  }
+  return min;
+}
+
+function getSegs(){
+  const sorted=[...prizes].sort((a,b)=>a.thresh-b.thresh);
+  return sorted.map((p,i)=>({...p,
+    nextThresh:i+1<sorted.length?sorted[i+1].thresh:9999,
+    prob:segProb(p.thresh,i+1<sorted.length?sorted[i+1].thresh:9999)
+  }));
+}
+
+function updatePrize(id,f,v){prizes.find(p=>p.id===id)[f]=v;}
+function delPrize(id){prizes=prizes.filter(p=>p.id!==id);calc();}
+function addPrize(){prizes.push({id:nid++,name:'新奖品',thresh:20,cost:100,retail:199,img:null});calc();}
+
+function renderPrizes(){
+  const segs=getSegs();
+  const segMap={};segs.forEach(s=>segMap[s.id]={prob:s.prob,nextThresh:s.nextThresh});
+  const unitPrice=+(document.getElementById('unit-price').value)||1;
+  const marginPct=+(document.getElementById('sl-margin').value)||0;
+  const budget=unitPrice*(1-marginPct/100);
+  const sorted=[...prizes].sort((a,b)=>a.thresh-b.thresh);
+  const grid=document.getElementById('prize-grid');
+  while(grid.children.length>1) grid.removeChild(grid.lastChild);
+
+  prizes.forEach(p=>{
+    const seg=segMap[p.id]||{prob:0,nextThresh:9999};
+    const ec=seg.prob/100*p.cost;
+    const pctB=budget>0?ec/budget*100:0;
+    const ci=sorted.findIndex(s=>s.id===p.id);
+    const color=COLORS[ci%COLORS.length];
+
+    const imgHtml=p.img
+      ? `<img class="img-thumb" src="${p.img}" alt="${p.name}" onclick="openLightbox('${p.img}','${p.name.replace(/'/g,"\\'")}');event.stopPropagation();">`
+      : `<div class="img-placeholder" onclick="triggerUpload(${p.id})">
+           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+         </div>`;
+
+    const row=document.createElement('div');
+    row.className='prize-item';
+    row.innerHTML=`
+      <div class="p-dot-col"><span class="p-dot" style="background:${color}"></span></div>
+      <div class="p-img-col">
+        <input type="file" accept="image/*" class="img-upload-input" id="img-input-${p.id}"
+          onchange="handleImageUpload(${p.id},this)">
+        ${imgHtml}
+      </div>
+      <div class="p-col">
+        <input class="prize-name-input" value="${p.name}" placeholder="商品名称"
+          oninput="updatePrize(${p.id},'name',this.value);calcDetailOnly()">
+      </div>
+      <div class="p-col">
+        <select class="p-field" onchange="updatePrize(${p.id},'thresh',+this.value);calc()">
+          ${ALL_EGGS.map(t=>`<option value="${t}"${t===p.thresh?' selected':''}>${t} 个</option>`).join('')}
+        </select>
+      </div>
+      <div class="p-col">
+        <input type="number" class="p-field" min="0" step="0.1" value="${p.cost}"
+          oninput="updatePrize(${p.id},'cost',+this.value);calc()">
+      </div>
+      <div class="p-col">
+        <input type="number" class="p-field" min="0" step="0.1" value="${p.retail}"
+          oninput="updatePrize(${p.id},'retail',+this.value);calc()">
+      </div>
+      <div class="p-col" style="flex-direction:column;align-items:flex-start;gap:2px;position:relative;padding-right:32px;">
+        <span class="p-stat highlight">${seg.prob.toFixed(4)}%</span>
+        <span class="p-stat ${pctB>80?'danger':''}">¥${ec.toFixed(2)} · ${pctB.toFixed(0)}%预算</span>
+        <button class="p-del" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);"
+          onclick="delPrize(${p.id})">×</button>
+      </div>`;
+    grid.appendChild(row);
+  });
+}
+
+function runRecommend(){
+  const btn=document.getElementById('rec-btn');
+  btn.disabled=true;btn.textContent='计算中...';
+  setTimeout(()=>{
+    const unitPrice=+(document.getElementById('unit-price').value)||1;
+    const marginPct=+(document.getElementById('sl-margin').value)||0;
+    const budget=unitPrice*(1-marginPct/100);
+    const sorted=[...prizes].sort((a,b)=>a.thresh-b.thresh);
+    const n=sorted.length;
+    if(!n){document.getElementById('rec-output').innerHTML='<div class="status warn">请先添加奖品</div>';resetBtn();return;}
+
+    const costs=sorted.map(p=>p.cost);
+    const {bounds,total:bestTotal,te}=globalOptimize(costs,budget,strat);
+    const actM=(unitPrice-bestTotal)/unitPrice*100;
+    const diff=Math.abs(actM-marginPct);
+
+    let statusHtml='';
+    if(bestTotal>budget+0.5){
+      const minEc=calcMinEc(costs);
+      const maxM=(1-minEc/unitPrice)*100;
+      statusHtml=`<div class="status bad" style="margin-bottom:10px;"><strong>目标利润率 ${marginPct}% 无法达到</strong> — 最小期望成本 ¥${minEc.toFixed(2)}，最高利润率约 ${maxM.toFixed(1)}%。以下为最接近方案（实际 ${actM.toFixed(1)}%）：</div>`;
+    } else if(diff<1){
+      statusHtml=`<div class="status ok" style="margin-bottom:10px;">精确命中 — 实际利润率 <strong>${actM.toFixed(2)}%</strong>，目标 ${marginPct}%</div>`;
+    } else {
+      statusHtml=`<div class="status warn" style="margin-bottom:10px;">接近目标 — 实际 <strong>${actM.toFixed(1)}%</strong> vs 目标 ${marginPct}%，误差 ${diff.toFixed(1)}%（概率分布离散所致）</div>`;
+    }
+
+    const rows=sorted.map((p,i)=>{
+      const loIdx=bounds[i],hiIdx=bounds[i+1];
+      const loEgg=ALL_EGGS[loIdx];
+      const hiEgg=hiIdx>=N?9999:ALL_EGGS[hiIdx];
+      const sp=SF(loIdx,hiIdx);
+      const ec=sp/100*p.cost;
+      const hiStr=hiEgg===9999?'+':hiEgg-1;
+      const d=ec-te[i];
+      return{id:p.id,name:p.name,loEgg,hiEgg,hiStr,sp,ec,te:te[i],d};
+    });
+    lastRecRows=rows;
+
+    let html=`${statusHtml}<div class="rec-card">
+      <div class="rec-card-head">
+        <span>推荐总期望成本 <strong style="color:var(--text-1);font-family:'Geist Mono',monospace;">¥${bestTotal.toFixed(2)}</strong> / 预算 ¥${budget.toFixed(2)}</span>
+        <button class="apply-all-btn" onclick="applyAll()">全部应用</button>
+      </div>`;
+    rows.forEach((r,i)=>{
+      const c=COLORS[i%COLORS.length];
+      const ds=(r.d>=0?'+':'')+'¥'+Math.abs(r.d).toFixed(2);
+      const dc=Math.abs(r.d)<Math.max(r.te*0.1,0.5)?'var(--green)':'var(--amber)';
+      html+=`<div class="rec-row">
+        <span style="width:7px;height:7px;border-radius:1.5px;background:${c};display:inline-block;flex-shrink:0;"></span>
+        <span class="rec-name" title="${r.name}">${r.name}</span>
+        <span class="rec-mono">${r.loEgg}～${r.hiStr}个</span>
+        <span class="rec-mono">${r.sp.toFixed(2)}%</span>
+        <span class="rec-mono">¥${r.ec.toFixed(2)} <span class="rec-diff" style="color:${dc}">${ds}</span></span>
+        <button class="apply-btn" onclick="applySingle(${r.id},${r.loEgg})">应用</button>
+      </div>`;
+    });
+    html+='</div>';
+    document.getElementById('rec-output').innerHTML=html;
+    resetBtn();
+  },30);
+}
+
+function resetBtn(){
+  const btn=document.getElementById('rec-btn');btn.disabled=false;
+  btn.innerHTML='<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 6h10M7 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>生成推荐';
+}
+function applySingle(id,loEgg){prizes.find(p=>p.id===id).thresh=loEgg;calc();}
+function applyAll(){
+  if(!lastRecRows||!lastRecRows.length) return;
+  lastRecRows.forEach(r=>prizes.find(p=>p.id===r.id).thresh=r.loEgg);
+  calc();
+  setTimeout(runRecommend,50);
+}
+
+// Only update detail table and prob bar without re-rendering prizes (avoids cursor jump)
+function calcDetailOnly(){
+  const unitPrice=+(document.getElementById('unit-price').value)||1;
+  const marginPct=+(document.getElementById('sl-margin').value)||0;
+  const budget=unitPrice*(1-marginPct/100);
+  const segs=getSegs();
+  let totalEc=0,totalEr=0,totalProb=0;
+  const rows=segs.map((s,i)=>{
+    const ec=s.prob/100*s.cost,er=s.prob/100*s.retail;
+    totalEc+=ec;totalEr+=er;totalProb+=s.prob;
+    return{...s,ec,er,color:COLORS[i%COLORS.length]};
+  });
+  const usedPct=budget>0?totalEc/budget*100:0;
+  // update detail table names only
+  const tb=document.getElementById('detail-tbody');
+  const trs=tb.querySelectorAll('tr:not(.total)');
+  rows.forEach((r,i)=>{
+    if(trs[i]){
+      const nameSpan=trs[i].querySelector('span[title]');
+      if(nameSpan){nameSpan.title=r.name;nameSpan.textContent=r.name;}
+    }
+  });
+}
+
+function calc(){
+  const unitPrice=+(document.getElementById('unit-price').value)||1;
+  const marginPct=+(document.getElementById('sl-margin').value)||0;
+  const budget=unitPrice*(1-marginPct/100);
+  document.getElementById('budget-display').value=budget.toFixed(2);
+
+  const segs=getSegs();
+  let totalEc=0,totalEr=0,totalProb=0;
+  const rows=segs.map((s,i)=>{
+    const ec=s.prob/100*s.cost,er=s.prob/100*s.retail;
+    totalEc+=ec;totalEr+=er;totalProb+=s.prob;
+    return{...s,ec,er,color:COLORS[i%COLORS.length]};
+  });
+
+  const uncov=100-totalProb;
+  const usedPct=budget>0?totalEc/budget*100:0;
+  const rem=budget-totalEc;
+  const actM=unitPrice>0?(1-totalEc/unitPrice)*100:0;
+  const retailRate=unitPrice>0?totalEr/unitPrice*100:0;
+
+  // formula bar
+  document.getElementById('f-budget').textContent=`¥${budget.toFixed(2)}`;
+  document.getElementById('f-cost').textContent=`¥${totalEc.toFixed(2)}`;
+  const fm=document.getElementById('f-margin');
+  fm.textContent=`${actM.toFixed(2)}%`;
+  fm.className=`f-result ${actM<marginPct-1?'bad':actM>marginPct+1?'good':'warn'}`;
+
+  renderPrizes();
+
+  // metrics
+  document.getElementById('metrics-row').innerHTML=`
+    <div class="metric"><div class="metric-label">单局定价</div><div class="metric-val">¥${unitPrice}</div><div class="metric-sub">玩家每局花费</div></div>
+    <div class="metric"><div class="metric-label">奖品预算</div><div class="metric-val">¥${budget.toFixed(2)}</div><div class="metric-sub">定价 × (1−利润率)</div></div>
+    <div class="metric"><div class="metric-label">期望奖品成本</div><div class="metric-val ${totalEc>budget?'bad':''}">¥${totalEc.toFixed(2)}</div><div class="metric-sub">${totalEc>budget?'超出预算':'在预算内'}</div></div>
+    <div class="metric"><div class="metric-label">剩余预算</div><div class="metric-val ${rem<0?'bad':rem<budget*0.05?'warn':'good'}">${rem>=0?'+':''}¥${Math.abs(rem).toFixed(2)}</div><div class="metric-sub">${rem<0?'超出':'剩余'}</div></div>
+    <div class="metric"><div class="metric-label">实际利润率</div><div class="metric-val ${actM<marginPct-1?'bad':actM>marginPct+1?'good':''}">${actM.toFixed(2)}%</div><div class="metric-sub">目标 ${marginPct}%</div></div>
+    <div class="metric"><div class="metric-label">零售价值率</div><div class="metric-val">${retailRate.toFixed(1)}%</div><div class="metric-sub">玩家感知 ÷ 定价</div></div>
+    <div class="metric"><div class="metric-label">毛利润 / 局</div><div class="metric-val ${rem>=0?'good':'bad'}">${rem>=0?'+':''}¥${(unitPrice-totalEc).toFixed(2)}</div></div>
+    <div class="metric"><div class="metric-label">概率覆盖率</div><div class="metric-val ${uncov>5?'warn':''}">${totalProb.toFixed(2)}%</div><div class="metric-sub">未覆盖 ${uncov.toFixed(2)}%</div></div>
+  `;
+
+  // progress
+  const bc=usedPct>100?'var(--red)':usedPct>90?'var(--amber)':'var(--green)';
+  document.getElementById('progress-fill').style.cssText=`width:${Math.min(usedPct,100)}%;background:${bc};`;
+  document.getElementById('progress-label').textContent=`¥${totalEc.toFixed(2)} / ¥${budget.toFixed(2)} · ${usedPct.toFixed(1)}%`;
+
+  // prob bar
+  const pb=document.getElementById('prob-bar'),pl=document.getElementById('prob-legend');
+  pb.innerHTML='';pl.innerHTML='';
+  rows.forEach(r=>{
+    const d=document.createElement('div');d.style.cssText=`flex:${Math.max(r.prob,0.05)};background:${r.color};`;pb.appendChild(d);
+    const l=document.createElement('div');l.className='prob-legend-item';
+    l.innerHTML=`<span class="prob-legend-dot" style="background:${r.color}"></span>${r.name.slice(0,8)} <strong>${r.prob.toFixed(2)}%</strong>`;
+    pl.appendChild(l);
+  });
+  if(uncov>0.001){
+    const d=document.createElement('div');d.style.cssText=`flex:${uncov};background:var(--surface-3);`;pb.appendChild(d);
+    document.getElementById('uncov-note').textContent=`灰色区域 (${uncov.toFixed(2)}%) 无奖品覆盖`;
+  } else document.getElementById('uncov-note').textContent='';
+
+  // status
+  const sw=document.getElementById('status-wrap');
+  if(totalEc>budget) sw.innerHTML=`<div class="status bad">超出预算 ¥${(totalEc-budget).toFixed(2)}，实际利润率 ${actM.toFixed(1)}%，低于目标 ${marginPct}%</div>`;
+  else if(rem<budget*0.03) sw.innerHTML=`<div class="status warn">预算基本用完，实际利润率 ${actM.toFixed(2)}%</div>`;
+  else sw.innerHTML=`<div class="status ok">预算剩余 ¥${rem.toFixed(2)}，实际利润率 ${actM.toFixed(2)}%，高于目标 ${marginPct}%</div>`;
+
+  // detail table
+  document.getElementById('detail-tbody').innerHTML=rows.map(r=>{
+    const pctB=budget>0?r.ec/budget*100:0;
+    const range=r.nextThresh===9999?`${r.thresh}个+`:`${r.thresh}～${r.nextThresh-1}个`;
+    return`<tr>
+      <td><div class="dot-name"><span class="tbl-dot" style="background:${r.color}"></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px;display:inline-block;" title="${r.name}">${r.name}</span></div></td>
+      <td class="mono">${range}</td>
+      <td class="r mono">${r.prob.toFixed(4)}%</td>
+      <td class="r mono">¥${r.cost.toFixed(1)}</td>
+      <td class="r mono">¥${r.retail.toFixed(1)}</td>
+      <td class="r mono" style="font-weight:500;">¥${r.ec.toFixed(2)}</td>
+      <td class="r mono">¥${r.er.toFixed(2)}</td>
+      <td class="r mono" style="color:${pctB>80?'var(--red)':pctB>50?'var(--amber)':'var(--text-3)'};">${pctB.toFixed(1)}%</td>
+    </tr>`;
+  }).join('')+`<tr class="total">
+    <td>合计</td><td></td>
+    <td class="r">${totalProb.toFixed(4)}%</td><td class="r" colspan="2"></td>
+    <td class="r">¥${totalEc.toFixed(2)}</td><td class="r">¥${totalEr.toFixed(2)}</td>
+    <td class="r" style="color:${usedPct>100?'var(--red)':'var(--text-1)'};">${usedPct.toFixed(1)}%</td>
+  </tr>`;
+}
+
+calc();
+</script>
+</body>
+</html>
