@@ -258,7 +258,7 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:14px;height:14px;b
           <th>商品</th><th>门槛区间</th>
           <th class="r">区间概率</th><th class="r">成本价</th>
           <th class="r">零售价</th><th class="r">期望成本/局</th>
-          <th class="r">期望零售/局</th><th class="r">占预算</th>
+          <th class="r">占预算</th>
         </tr></thead>
         <tbody id="detail-tbody"></tbody>
       </table>
@@ -399,9 +399,14 @@ function renderPrizes(){
     const fi=document.createElement('input');fi.type='file';fi.accept='image/*';
     fi.style.display='none';fi.dataset.uploadId=p.id;ic.appendChild(fi);
     if(p.img){
+      const wrap=document.createElement('div');wrap.style.cssText='position:relative;width:38px;height:38px;';
       const img=document.createElement('img');img.className='img-thumb';
       img.src=p.img;img.alt=p.name;img.dataset.lightboxId=p.id;
-      ic.appendChild(img);
+      img.style.cssText='width:38px;height:38px;border-radius:4px;object-fit:cover;cursor:pointer;display:block;';
+      const rmb=document.createElement('button');rmb.dataset.removeImg=p.id;
+      rmb.style.cssText='position:absolute;top:-5px;right:-5px;width:16px;height:16px;border-radius:50%;background:var(--text-1);border:none;cursor:pointer;color:#fff;font-size:10px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;z-index:1;';
+      rmb.textContent='×';
+      wrap.appendChild(img);wrap.appendChild(rmb);ic.appendChild(wrap);
     } else {
       const ph=document.createElement('div');ph.className='img-placeholder';ph.dataset.uploadTrigger=p.id;
       ph.innerHTML='<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
@@ -518,10 +523,10 @@ function calc(){
     return`<tr><td><div class="dot-name"><span class="tbl-dot" style="background:${r.color}"></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px;display:inline-block;" title="${r.name}">${r.name}</span></div></td>
     <td class="mono">${range}</td><td class="r mono">${r.prob.toFixed(4)}%</td>
     <td class="r mono">¥${r.cost.toFixed(1)}</td><td class="r mono">¥${r.retail.toFixed(1)}</td>
-    <td class="r mono" style="font-weight:500;">¥${r.ec.toFixed(2)}</td><td class="r mono">¥${r.er.toFixed(2)}</td>
+    <td class="r mono" style="font-weight:500;">¥${r.ec.toFixed(2)}</td>
     <td class="r mono" style="color:${pB>80?'var(--red)':pB>50?'var(--amber)':'var(--text-3)'};">${pB.toFixed(1)}%</td></tr>`;
   }).join('')+`<tr class="total"><td>合计</td><td></td><td class="r">${tprob.toFixed(4)}%</td><td class="r" colspan="2"></td>
-    <td class="r">¥${tec.toFixed(2)}</td><td class="r">¥${ter.toFixed(2)}</td>
+    <td class="r">¥${tec.toFixed(2)}</td>
     <td class="r" style="color:${used>100?'var(--red)':'var(--text-1)'};">${used.toFixed(1)}%</td></tr>`;
 
   save();
@@ -592,14 +597,12 @@ function runRecommend(){
 
     const rows=lastRec.map((r,i)=>{
       const c=COLORS[i%COLORS.length];
-      const ds=(r.d>=0?'+':'')+'¥'+Math.abs(r.d).toFixed(2);
-      const dc=Math.abs(r.d)<Math.max(r.te*.1,.5)?'var(--green)':'var(--amber)';
       return`<div class="rec-row">
         <span style="width:7px;height:7px;border-radius:1.5px;background:${c};display:inline-block;flex-shrink:0;"></span>
         <span class="rec-name" title="${r.name}">${r.name}</span>
         <span class="rec-mono">${r.lo}～${r.hiStr}个</span>
         <span class="rec-mono">${r.sp.toFixed(2)}%</span>
-        <span class="rec-mono">¥${r.ec.toFixed(2)} <span class="rec-diff" style="color:${dc}">${ds}</span></span>
+        <span class="rec-mono">¥${r.ec.toFixed(2)}</span>
         <button class="apply-btn" data-apply="${r.id}" data-egg="${r.lo}">应用</button>
       </div>`;
     }).join('');
@@ -687,9 +690,12 @@ document.addEventListener('DOMContentLoaded', function(){
   });
 
   grid.addEventListener('click', function(e){
-    // 删除
+    // 删除奖品
     const db=e.target.closest('[data-del]');
     if(db){ delPrize(+db.dataset.del); return; }
+    // 删除图片
+    const rm=e.target.closest('[data-remove-img]');
+    if(rm){ const p=prizes.find(p=>p.id===+rm.dataset.removeImg);if(p){p.img=null;save();renderPrizes();}return; }
     // 上传触发
     const ut=e.target.closest('[data-upload-trigger]');
     if(ut){ const fi=ut.closest('.pc-img').querySelector('input[type=file]'); if(fi) fi.click(); return; }
